@@ -1,20 +1,21 @@
-# Use the official Node.js image with Alpine for a smaller footprint
-FROM node:14-alpine
+# Use an official Node.js runtime as the base image
+FROM node:20-alpine
 
-# Set the working directory inside the container
+# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install --production
 
-# Install the dependencies
-RUN npm ci --only=production
-
-# Copy the rest of the application code to the working directory
+# Copy the rest of your application code
 COPY . .
 
-# Expose the port that your application will run on
+# Set environment variables (optional)
+ENV NODE_ENV=production
+
+# Expose the port your Express app runs on (adjust if needed)
 EXPOSE 3000
 
-# Define the command to run your application
-CMD ["node", "app.js"]
+# Define the command to run your app
+CMD ["npm", "start"]
