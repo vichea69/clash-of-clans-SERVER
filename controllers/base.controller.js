@@ -1,4 +1,5 @@
 import Base from '../models/base.model.js';
+import User from '../models/user.model.js';
 
 // Create a new base
 export const createBase = async (req, res) => {
@@ -15,10 +16,16 @@ export const createBase = async (req, res) => {
 // Get all bases
 export const getBases = async (req, res) => {
     try {
-        const bases = await Base.findAll();
-        res.status(200).json({ success: true, data: bases });
+        const bases = await Base.findAll({
+            include: {
+                model: User,
+                as: 'user',
+                attributes: ['name'],
+            },
+        });
+        res.status(200).json({ success: true, data: bases, message: 'Bases fetched successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error fetching bases', error });
+        res.status(500).json({ success: false, message: 'Error fetching bases', error: error.message });
     }
 };
 

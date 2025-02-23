@@ -3,7 +3,7 @@ import { DataTypes } from "sequelize";
 import sequelize from '../database/mysql.js'; // Import the sequelize instance
 
 const User = sequelize.define('User', {
-    username: {
+    name: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,

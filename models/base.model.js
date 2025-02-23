@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../database/mysql.js';
+import User from './user.model.js'; // Import the User model
 
 const Base = sequelize.define('Base', {
     name: {
@@ -24,5 +25,8 @@ const Base = sequelize.define('Base', {
 }, {
     timestamps: true,
 });
+
+// Define the association
+Base.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 export default Base; 

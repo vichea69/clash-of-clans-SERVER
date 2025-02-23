@@ -25,9 +25,12 @@ export const signUp = async (req, res) => {
             password: hashedPassword,
         });
 
+        // Generate a JWT token
+        const token = jwt.sign({ id: newUser.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
         res.status(201).json({ message: 'User registered successfully', user: newUser, token: token });
     } catch (error) {
-        res.status(500).json({ message: 'Error registering user', error });
+        res.status(500).json({ message: 'Error registering user', error: error.message });
     }
 };
 

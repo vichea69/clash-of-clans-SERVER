@@ -26,7 +26,7 @@ const connectToDatabase = async () => {
 };
 
 // Sync all models
-sequelize.sync({ alter: true }) // Use { force: true } to drop and recreate the table
+sequelize.sync({ force: false })
     .then(() => {
         console.log('Database & tables created!');
         // Log all model names
