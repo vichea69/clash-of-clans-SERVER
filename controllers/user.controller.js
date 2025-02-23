@@ -1,6 +1,6 @@
 import UserModel from '../models/user.model.js';
 
-// Utility function for sending responses
+// Utility function for sending responses display token in response
 const sendResponse = (res, status, success, message, data = null) => {
     res.status(status).json({ success, message, data });
 };
@@ -15,7 +15,7 @@ export const createUser = async (req, res) => {
     }
 };
 
-// Get all users
+// Get all users and display token in response
 export const getAllUsers = async (req, res) => {
     try {
         const users = await UserModel.findAll();
