@@ -2,7 +2,7 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql_db
-    restart: unless-stopped
+    restart: no
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: my_database
@@ -17,7 +17,7 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: phpmyadmin_container
-    restart: unless-stopped
+    restart: no
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
