@@ -16,9 +16,6 @@ const Base = sequelize.define('Base', {
     imageUrl: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-            isUrl: true,
-        },
     },
     userId: {
         type: DataTypes.INTEGER,

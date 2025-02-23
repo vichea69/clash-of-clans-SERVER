@@ -4,7 +4,7 @@ import Base from '../models/base.model.js';
 export const createBase = async (req, res) => {
     try {
         const { name, link } = req.body;
-        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
         const newBase = await Base.create({ name, link, imageUrl, userId: req.user.id });
         res.status(201).json({ success: true, data: newBase });
     } catch (error) {
@@ -43,7 +43,7 @@ export const updateBase = async (req, res) => {
         if (!base) {
             return res.status(404).json({ success: false, message: 'Base not found' });
         }
-        const imageUrl = req.file ? `/uploads/${req.file.filename}` : base.imageUrl;
+        const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : base.imageUrl;
         await base.update({ name, link, imageUrl });
         res.status(200).json({ success: true, data: base });
     } catch (error) {
