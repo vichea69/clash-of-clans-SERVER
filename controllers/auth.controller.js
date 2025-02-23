@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 import UserModel from '../models/user.model.js';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/env.js';
 
-// Sign up a new user
+// Sign up a new user 
+//display token in response 
 export const signUp = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -24,7 +25,7 @@ export const signUp = async (req, res) => {
             password: hashedPassword,
         });
 
-        res.status(201).json({ message: 'User registered successfully', user: newUser });
+        res.status(201).json({ message: 'User registered successfully', user: newUser, token: token });
     } catch (error) {
         res.status(500).json({ message: 'Error registering user', error });
     }
@@ -50,7 +51,7 @@ export const signIn = async (req, res) => {
         // Generate a JWT token
         const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-        res.status(200).json({ message: 'Login successful', token });
+        res.status(200).json({ message: 'Login successful', token: token });
     } catch (error) {
         res.status(500).json({ message: 'Error logging in', error });
     }
@@ -59,7 +60,7 @@ export const signIn = async (req, res) => {
 // Sign out a user
 export const signOut = (req, res) => {
     // Invalidate the token or handle session termination logic
-    res.status(200).json({ message: 'Sign out successful' });
+    res.status(200).json({ message: 'Sign out successful', token: null });
 };
 
 // Verify token
