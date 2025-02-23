@@ -25,4 +25,17 @@ const connectToDatabase = async () => {
     }
 };
 
-export default connectToDatabase; 
+// Sync all models
+sequelize.sync({ alter: true }) // Use { force: true } to drop and recreate the table
+    .then(() => {
+        console.log('Database & tables created!');
+        // Log all model names
+        console.log('Tables:', Object.keys(sequelize.models).join(', '));
+    })
+    .catch(err => {
+        console.error('Unable to connect to the database:', err);
+    });
+
+connectToDatabase(); // Call the function to connect to the database
+
+export default sequelize; // Export the sequelize instance 
