@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 import UserModel from '../models/user.model.js';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/env.js';
 
-// Register a new user
-export const register = async (req, res) => {
+// Sign up a new user
+export const signUp = async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
@@ -30,8 +30,8 @@ export const register = async (req, res) => {
     }
 };
 
-// Login a user
-export const login = async (req, res) => {
+// Sign in a user
+export const signIn = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -54,6 +54,12 @@ export const login = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error logging in', error });
     }
+};
+
+// Sign out a user
+export const signOut = (req, res) => {
+    // Invalidate the token or handle session termination logic
+    res.status(200).json({ message: 'Sign out successful' });
 };
 
 // Verify token
