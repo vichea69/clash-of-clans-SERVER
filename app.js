@@ -28,6 +28,9 @@ app.get("/clerk-users", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch users from Clerk" });
     }
 });
+app.get("/", (req, res) => {
+    res.send("Hello World");
+});
 
 //All routes are prefixed with /api/v1
 app.use("/api/v1/users", userRouter);
