@@ -20,6 +20,11 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    // clerk_id: {
+    //     type: DataTypes.STRING,
+    //     allowNull: true,
+    //     unique: true,
+    // }
 }, {
     timestamps: true,
     hooks: {

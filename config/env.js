@@ -12,4 +12,6 @@ export const {
     DB_NAME,
     JWT_SECRET,
     JWT_EXPIRES_IN,
+    CLERK_PUBLISHABLE_KEY,
+    CLERK_SECRET_KEY
 } = process.env;
