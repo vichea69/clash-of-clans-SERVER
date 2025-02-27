@@ -29,7 +29,14 @@ app.get("/clerk-users", async (req, res) => {
     }
 });
 app.get("/", (req, res) => {
-    res.send("Hello World");
+    res.send(
+        < div >
+            <h1>Hello World</h1>
+            <p>This is a test</p>
+            <p>The current time is {new Date().toLocaleTimeString()}</p>
+            <p>API is running on port {PORT}</p>
+        </div >
+    );
 });
 
 //All routes are prefixed with /api/v1
