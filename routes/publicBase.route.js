@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createPublicBase, getPublicBases, getPublicBaseById, updatePublicBase, deletePublicBase } from '../controllers/publicBase.controller.js';
 import upload from '../middleware/upload.middleware.js';
-import { requireAuth } from '@clerk/express';
+import { clerkMiddleware } from '@clerk/express';
 
 const publicBaseRouter = Router();
 
@@ -10,8 +10,8 @@ publicBaseRouter.get('/', getPublicBases);
 publicBaseRouter.get('/:id', getPublicBaseById);
 
 // Protected routes - require authentication
-publicBaseRouter.post('/', requireAuth(), upload.single('image'), createPublicBase);
-publicBaseRouter.put('/:id', requireAuth(), upload.single('image'), updatePublicBase);
-publicBaseRouter.delete('/:id', requireAuth(), deletePublicBase);
+publicBaseRouter.post('/', clerkMiddleware(), upload.single('image'), createPublicBase);
+publicBaseRouter.put('/:id', clerkMiddleware(), upload.single('image'), updatePublicBase);
+publicBaseRouter.delete('/:id', clerkMiddleware(), deletePublicBase);
 
 export default publicBaseRouter; 

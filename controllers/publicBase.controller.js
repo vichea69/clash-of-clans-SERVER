@@ -4,9 +4,14 @@ import { clerkClient } from '@clerk/express';
 // Create a new public base
 export const createPublicBase = async (req, res) => {
     try {
+        // Get user ID from Clerk auth middleware
+        const clerkUserId = req.auth?.userId;
+        if (!clerkUserId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+
         const { name, link } = req.body;
         const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
-        const clerkUserId = req.auth.userId;
 
         const newPublicBase = await PublicBase.create({
             name,
@@ -15,9 +20,22 @@ export const createPublicBase = async (req, res) => {
             clerkUserId
         });
 
-        res.status(201).json({ success: true, data: newPublicBase });
+        // Fetch user data for the response
+        const user = await clerkClient.users.getUser(clerkUserId);
+        const baseWithUser = {
+            ...newPublicBase.toJSON(),
+            user: {
+                id: user.id,
+                name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                imageUrl: user.imageUrl,
+                email: user.emailAddresses?.[0]?.emailAddress || null
+            }
+        };
+
+        res.status(201).json({ success: true, data: baseWithUser });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error creating public base', error });
+        console.error('Error creating public base:', error);
+        res.status(500).json({ success: false, message: 'Error creating public base', error: error.message });
     }
 };
 
@@ -25,43 +43,52 @@ export const createPublicBase = async (req, res) => {
 export const getPublicBases = async (req, res) => {
     try {
         const bases = await PublicBase.findAll();
-
-        // Create an array of user IDs to fetch
         const userIds = [...new Set(bases
             .filter(base => base.clerkUserId)
             .map(base => base.clerkUserId))];
 
-        // Map to store user data
-        let users = {};
-
-        // Fetch each user individually instead of using getUserList
+        // Batch fetch users to optimize performance
+        const users = {};
         if (userIds.length > 0) {
             for (const userId of userIds) {
                 try {
                     const user = await clerkClient.users.getUser(userId);
-
-                    if (user && user.id) {
+                    if (user) {
                         users[user.id] = {
                             id: user.id,
                             name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
                             imageUrl: user.imageUrl,
-                            email: user.emailAddresses && user.emailAddresses[0] ?
-                                user.emailAddresses[0].emailAddress : null
+                            email: user.emailAddresses?.[0]?.emailAddress || null
                         };
                     }
                 } catch (error) {
-                    console.error(`Error fetching user ${userId}:`, error);
+                    // If user not found or other error, just log it and continue
+                    if (error.status === 404) {
+                        console.log(`User ${userId} no longer exists in Clerk`);
+                        // Optionally, you could clean up orphaned records here
+                    } else {
+                        console.error(`Error fetching user ${userId}:`, error);
+                    }
+                    // Set a placeholder for deleted users
+                    users[userId] = {
+                        id: userId,
+                        name: 'Deleted User',
+                        imageUrl: null,
+                        email: null
+                    };
                 }
             }
         }
 
-        // Add user data to bases
-        const basesWithUsers = bases.map(base => {
-            const baseObj = base.toJSON();
-            baseObj.user = (base.clerkUserId && users[base.clerkUserId]) ?
-                users[base.clerkUserId] : null;
-            return baseObj;
-        });
+        const basesWithUsers = bases.map(base => ({
+            ...base.toJSON(),
+            user: users[base.clerkUserId] || {
+                id: base.clerkUserId,
+                name: 'Deleted User',
+                imageUrl: null,
+                email: null
+            }
+        }));
 
         res.status(200).json({
             success: true,
@@ -69,6 +96,7 @@ export const getPublicBases = async (req, res) => {
             message: 'Public bases fetched successfully'
         });
     } catch (error) {
+        console.error('Error fetching public bases:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching public bases',
@@ -81,88 +109,113 @@ export const getPublicBases = async (req, res) => {
 export const getPublicBaseById = async (req, res) => {
     try {
         const base = await PublicBase.findByPk(req.params.id);
-
         if (!base) {
             return res.status(404).json({ success: false, message: 'Public base not found' });
         }
 
         const baseObj = base.toJSON();
 
-        // Add user information if clerkUserId exists
         if (base.clerkUserId) {
             try {
-                const response = await clerkClient.users.getUser(base.clerkUserId);
-
-                // Handle different response structures
-                let user = response;
-                if (response.data) {
-                    user = response.data;
-                }
-
-                if (user && user.id) {
-                    baseObj.user = {
-                        id: user.id,
-                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-                        imageUrl: user.imageUrl,
-                        email: user.emailAddresses && user.emailAddresses[0] ?
-                            user.emailAddresses[0].emailAddress : null
-                    };
-                } else {
-                    baseObj.user = null;
-                }
+                const user = await clerkClient.users.getUser(base.clerkUserId);
+                baseObj.user = {
+                    id: user.id,
+                    name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                    imageUrl: user.imageUrl,
+                    email: user.emailAddresses?.[0]?.emailAddress || null
+                };
             } catch (error) {
-                console.error('ERROR FETCHING USER FROM CLERK:', error);
+                console.error('Error fetching user from Clerk:', error);
                 baseObj.user = null;
             }
         }
 
         res.status(200).json({ success: true, data: baseObj });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error fetching public base', error });
+        console.error('Error fetching public base:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching public base',
+            error: error.message
+        });
     }
 };
 
 // Update a public base
 export const updatePublicBase = async (req, res) => {
     try {
-        const { name, link } = req.body;
-        const base = await PublicBase.findByPk(req.params.id);
+        const clerkUserId = req.auth?.userId;
+        if (!clerkUserId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
 
+        const base = await PublicBase.findByPk(req.params.id);
         if (!base) {
             return res.status(404).json({ success: false, message: 'Public base not found' });
         }
 
-        // Check if the user has permission to update this base
-        if (base.clerkUserId && base.clerkUserId !== req.auth.userId) {
+        if (base.clerkUserId !== clerkUserId) {
             return res.status(403).json({ success: false, message: 'Not authorized to update this base' });
         }
 
-        const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : base.imageUrl;
-        await base.update({ name, link, imageUrl });
+        const { name, link } = req.body;
+        const imageUrl = req.file ?
+            `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` :
+            base.imageUrl;
 
-        res.status(200).json({ success: true, data: base });
+        const updatedBase = await base.update({ name, link, imageUrl });
+
+        // Fetch updated user data
+        const user = await clerkClient.users.getUser(clerkUserId);
+        const baseWithUser = {
+            ...updatedBase.toJSON(),
+            user: {
+                id: user.id,
+                name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                imageUrl: user.imageUrl,
+                email: user.emailAddresses?.[0]?.emailAddress || null
+            }
+        };
+
+        res.status(200).json({ success: true, data: baseWithUser });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error updating public base', error });
+        console.error('Error updating public base:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating public base',
+            error: error.message
+        });
     }
 };
 
 // Delete a public base
 export const deletePublicBase = async (req, res) => {
     try {
-        const base = await PublicBase.findByPk(req.params.id);
+        const clerkUserId = req.auth?.userId;
+        if (!clerkUserId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
 
+        const base = await PublicBase.findByPk(req.params.id);
         if (!base) {
             return res.status(404).json({ success: false, message: 'Public base not found' });
         }
 
-        // Check if the user has permission to delete this base
-        if (base.clerkUserId && base.clerkUserId !== req.auth.userId) {
+        if (base.clerkUserId !== clerkUserId) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this base' });
         }
 
         await base.destroy();
-        res.status(200).json({ success: true, message: 'Public base deleted' });
+        res.status(200).json({
+            success: true,
+            message: 'Public base deleted successfully'
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error deleting public base', error });
+        console.error('Error deleting public base:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting public base',
+            error: error.message
+        });
     }
 };
