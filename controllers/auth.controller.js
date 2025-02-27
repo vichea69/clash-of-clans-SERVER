@@ -96,28 +96,12 @@ export const verifyToken = (req, res, next) => {
   });
 };
 
-// Get the current user
-export const getCurrentUser = async (req, res) => {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
 
-    const user = await UserModel.findByPk(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    return res.json({ user });
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching user', error: error.message });
-  }
-};
 
 export default {
   signUp,
   signIn,
   signOut,
   verifyToken,
-  getCurrentUser,
+
 };

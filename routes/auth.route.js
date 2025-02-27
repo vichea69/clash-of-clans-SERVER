@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signUp, signIn, signOut, verifyToken, getCurrentUser } from '../controllers/auth.controller.js';
+import { signUp, signIn, signOut } from '../controllers/auth.controller.js';
 
 const authRouter = Router();
 
@@ -12,7 +12,6 @@ authRouter.post('/sign-in', signIn);
 // Route for user sign-out
 authRouter.post('/sign-out', signOut);
 
-// Route to get current user
-authRouter.get('/me', verifyToken, getCurrentUser);
+
 
 export default authRouter;
