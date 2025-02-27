@@ -6,7 +6,7 @@ import errorHandler from './middleware/error.middleware.js';
 import cors from 'cors';
 import 'dotenv/config'
 import { clerkMiddleware } from '@clerk/express'
-import { clerkClient, requireAuth, getAuth } from '@clerk/express';
+import { clerkClient } from '@clerk/express';
 import publicBaseRouter from './routes/publicBase.route.js';
 
 const app = express();
@@ -14,7 +14,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+    origin: ['https://base.vichea.engineer'], // Allow only production frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+    credentials: true
+}));
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static('uploads'));
