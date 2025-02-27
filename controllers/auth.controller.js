@@ -26,7 +26,7 @@ export const signUp = async (req, res) => {
     });
 
     // Generate a JWT token
-    const token = jwt.sign({ id: newUser.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign({ id: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({ message: 'User registered successfully', user: newUser, token: token });
   } catch (error) {
@@ -52,14 +52,26 @@ export const signIn = async (req, res) => {
     }
 
     // Generate a JWT token
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.status(200).json({ message: 'Login successful', token: token });
+    // Return user data without password
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    res.status(200).json({
+      message: 'Login successful',
+      token: token,
+      user: userData
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in', error });
   }
 };
-
 // Sign out a user
 export const signOut = (req, res) => {
   // Invalidate the token or handle session termination logic
@@ -84,93 +96,21 @@ export const verifyToken = (req, res, next) => {
   });
 };
 
-// Get the current user (works with either JWT or Clerk)
+// Get the current user
 export const getCurrentUser = async (req, res) => {
   try {
-    // For Clerk auth
-    if (req.auth?.userId) {
-      // If user was linked in middleware
-      if (req.dbUser) {
-        return res.json({ 
-          user: req.dbUser,
-          authMethod: 'clerk' 
-        });
-      }
-      
-      // Otherwise fetch from Clerk directly
-      return res.json({ 
-        clerkUser: req.auth,
-        authMethod: 'clerk' 
-      });
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
     }
-    
-    // For JWT auth (from your existing verifyToken middleware)
-    if (req.userId) {
-      const user = await UserModel.findByPk(req.userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      return res.json({ 
-        user,
-        authMethod: 'jwt' 
-      });
+
+    const user = await UserModel.findByPk(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-    
-    return res.status(401).json({ message: 'Not authenticated' });
+
+    return res.json({ user });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching user', error: error.message });
-  }
-};
-
-// Handle Clerk webhooks
-export const handleClerkWebhook = async (req, res) => {
-  const evt = req.body;
-  
-  try {
-    // Handle user.created event
-    if (evt.type === 'user.created') {
-      const { id, email_addresses, first_name, last_name } = evt.data;
-      const primaryEmail = email_addresses.find(email => email.primary)?.email_address;
-      
-      if (primaryEmail) {
-        // Check if user exists
-        const existingUser = await UserModel.findOne({ where: { email: primaryEmail } });
-        
-        if (existingUser) {
-          // Link user
-          existingUser.clerk_id = id;
-          await existingUser.save();
-        } else {
-          // Create new user
-          await UserModel.create({
-            name: `${first_name || ''} ${last_name || ''}`.trim(),
-            email: primaryEmail,
-            clerk_id: id,
-            password: Math.random().toString(36).slice(-10) // Random password
-          });
-        }
-      }
-    }
-    
-    // Handle user.deleted event
-    if (evt.type === 'user.deleted') {
-      const userId = evt.data.id;
-      // Option 1: Delete user from your DB
-      // await UserModel.destroy({ where: { clerk_id: userId } });
-      
-      // Option 2: Unlink user from Clerk
-      const user = await UserModel.findOne({ where: { clerk_id: userId } });
-      if (user) {
-        user.clerk_id = null;
-        await user.save();
-      }
-    }
-    
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    res.status(500).json({ error: error.message });
   }
 };
 
@@ -180,5 +120,4 @@ export default {
   signOut,
   verifyToken,
   getCurrentUser,
-  handleClerkWebhook,
 };
