@@ -8,9 +8,23 @@ import 'dotenv/config'
 import { clerkMiddleware } from '@clerk/express'
 import { clerkClient } from '@clerk/express';
 import publicBaseRouter from './routes/publicBase.route.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get directory name in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('Created uploads directory');
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -22,7 +36,7 @@ app.use(cors({
 }));
 
 // Serve static files from the uploads directory
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(clerkMiddleware())
 app.get("/clerk-users", async (req, res) => {
     try {
@@ -58,6 +72,7 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Uploads directory: ${uploadsDir}`);
 });
 
 export default app;

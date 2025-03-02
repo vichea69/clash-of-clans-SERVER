@@ -11,7 +11,8 @@ export const createPublicBase = async (req, res) => {
         }
 
         const { name, link } = req.body;
-        const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+        const imageUrl = req.file ? `uploads/${req.file.filename}` : null;
+
 
         const newPublicBase = await PublicBase.create({
             name,
@@ -93,6 +94,7 @@ export const getPublicBases = async (req, res) => {
         res.status(200).json({
             success: true,
             data: basesWithUsers,
+            total: bases.length,
             message: 'Public bases fetched successfully'
         });
     } catch (error) {
@@ -160,8 +162,8 @@ export const updatePublicBase = async (req, res) => {
 
         const { name, link } = req.body;
         const imageUrl = req.file ?
-            `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` :
-            base.imageUrl;
+            `uploads/${req.file.filename}` :
+            base.imageUrl;  // Keep existing image if no new file uploaded
 
         const updatedBase = await base.update({ name, link, imageUrl });
 
