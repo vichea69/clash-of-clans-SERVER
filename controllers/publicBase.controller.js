@@ -47,9 +47,11 @@ export const getPublicBases = async (req, res) => {
         const limit = 16;
         const offset = (page - 1) * limit;
 
+        // Add sorting to the query
         const { count: total, rows: bases } = await PublicBase.findAndCountAll({
             limit,
             offset,
+            order: [['createdAt', 'DESC']], // Sort by createdAt in descending order
         });
 
         const userIds = [...new Set(bases
