@@ -167,16 +167,28 @@ export const updatePublicBase = async (req, res) => {
         }
 
         const { name, link } = req.body;
-        const imageUrl = req.file ?
-            `uploads/${req.file.filename}` :
-            base.imageUrl;  // Keep existing image if no new file uploaded
+        let imageUrl = base.imageUrl; // Default to existing image
 
-        const updatedBase = await base.update({ name, link, imageUrl });
+        // Handle new image upload
+        if (req.file) {
+            imageUrl = `uploads/${req.file.filename}`;
+            // Optionally: Delete old image file here if needed
+        }
+
+        const updatedBase = await base.update({
+            name,
+            link,
+            imageUrl: imageUrl || null
+        });
+
+        // Get the base URL for the API
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
 
         // Fetch updated user data
         const user = await clerkClient.users.getUser(clerkUserId);
         const baseWithUser = {
             ...updatedBase.toJSON(),
+            imageUrl: imageUrl ? `${baseUrl}/${imageUrl}` : null, // Return full URL
             user: {
                 id: user.id,
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
