@@ -43,34 +43,36 @@ export const createPublicBase = async (req, res) => {
 // Get all public bases with user information
 export const getPublicBases = async (req, res) => {
     try {
-        const bases = await PublicBase.findAll();
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = 16;
+        const offset = (page - 1) * limit;
+
+        const { count: total, rows: bases } = await PublicBase.findAndCountAll({
+            limit,
+            offset,
+        });
+
         const userIds = [...new Set(bases
             .filter(base => base.clerkUserId)
             .map(base => base.clerkUserId))];
 
-        // Batch fetch users to optimize performance
         const users = {};
         if (userIds.length > 0) {
-            for (const userId of userIds) {
+            await Promise.all(userIds.map(async userId => {
                 try {
                     const user = await clerkClient.users.getUser(userId);
-                    if (user) {
-                        users[user.id] = {
-                            id: user.id,
-                            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-                            imageUrl: user.imageUrl,
-                            email: user.emailAddresses?.[0]?.emailAddress || null
-                        };
-                    }
+                    users[userId] = {
+                        id: user.id,
+                        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                        imageUrl: user.imageUrl,
+                        email: user.emailAddresses?.[0]?.emailAddress || null
+                    };
                 } catch (error) {
-                    // If user not found or other error, just log it and continue
                     if (error.status === 404) {
                         console.log(`User ${userId} no longer exists in Clerk`);
-                        // Optionally, you could clean up orphaned records here
                     } else {
                         console.error(`Error fetching user ${userId}:`, error);
                     }
-                    // Set a placeholder for deleted users
                     users[userId] = {
                         id: userId,
                         name: 'Deleted User',
@@ -78,7 +80,7 @@ export const getPublicBases = async (req, res) => {
                         email: null
                     };
                 }
-            }
+            }));
         }
 
         const basesWithUsers = bases.map(base => ({
@@ -94,7 +96,9 @@ export const getPublicBases = async (req, res) => {
         res.status(200).json({
             success: true,
             data: basesWithUsers,
-            total: bases.length,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
             message: 'Public bases fetched successfully'
         });
     } catch (error) {
