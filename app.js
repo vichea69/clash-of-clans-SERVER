@@ -11,6 +11,7 @@ import publicBaseRouter from './routes/publicBase.route.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import leaderboardRoutes from './routes/leaderboard.routes.js';
 
 // Get directory name in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +57,7 @@ app.get("/", (req, res) => {
             users: "/api/v1/users",
             auth: "/api/v1/auth",
             bases: "/api/v1/bases",
-            publicBases: "/api/v1/public-bases"
+            leaderboard: "/api/v1/leaderboard"
         }
     });
 });
@@ -66,6 +67,15 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/bases", baseRouter);
 app.use('/api/v1/public-bases', publicBaseRouter);
+
+// Add this line to see incoming requests in console
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
+// Register the routes with /api prefix
+app.use('/api/v1/leaderboard', leaderboardRoutes);
 
 // Add the error-handling middleware
 app.use(errorHandler);
