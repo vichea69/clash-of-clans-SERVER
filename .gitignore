@@ -15,12 +15,11 @@ build/
 .DS_Store
 Thumbs.db
 
-# Ignore compiled files
-*.class
-*.o
-*.so
-
 # Ignore IDE specific files
 .vscode/
 .idea/
-*.iml uploads/
+*.iml
+
+# Ignore uploads directory but keep the folder structure
+uploads/*
+!uploads/.gitkeep
